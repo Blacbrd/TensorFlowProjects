@@ -57,7 +57,9 @@ for features, label in trainingData: # 2D list so 2 variables needed
     y_train.append(label)
 
 # (How many features (we don't know so -1), pixel size, pixel size, ray scale (so only one channel))
-# Features is basically how many lists there are altogether
+
+# We use -1 since we don't know how many images will be passed through (since some will be corrupted)
+# If we know that there will be exactly 100 images, then the first value will be 100 (100 different arrays with x pixels and y pixels with a colour depth of 1)
 x_train = np.array(x_train).reshape(-1, imageSize, imageSize, 1)
 
 # This saves the training data so that we don't have to rerun this script again and again
