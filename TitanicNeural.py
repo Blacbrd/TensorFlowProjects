@@ -2,6 +2,7 @@
 # https://www.tensorflow.org/tutorials/load_data/csv
 
 import keras
+import tensorflow as tf
 import numpy as np
 import pandas as pd
 
@@ -14,29 +15,51 @@ dataFrameTitanicTrain = pd.read_csv(dataDirTrain)
 # Removes survived column and adds it to this variable
 labelsCSV = dataFrameTitanicTrain.pop("Survived")
 
-# Numpy arrays to feed into network
-trainingFeatures = np.array(dataFrameTitanicTrain)
-labels = np.array(labelsCSV)
+# New training data without survived column
+trainingDataCSV = dataFrameTitanicTrain
 
-model = keras.models.Sequential()
+# Since each column has a different datatype and such, we need to split them up
+# Initialise a dictionary which asigns the name of the column to a keras Tensor (layer)
+inputsToNN = {}
 
-model.add(keras.layers.Input(trainingFeatures.shape))
+for name, column in trainingDataCSV.items():
 
-model.add(keras.layers.Dense(128, activation="relu"))
-model.add(keras.layers.Dense(128, activation="relu"))
+    dataType = column.dtype
 
-model.add(keras.layers.Dense(1, activation="sigmoid"))
+    if dataType == object: # If its a string
 
-optimiser = keras.optimizers.Adam(learning_rate=0.001)
+        dataType = tf.string
+    
+    else:
 
-# This tells the model to strive for accuracy, therefore to reduce loss
-model.compile(optimizer=optimiser, loss=keras.losses.MeanSquaredError(), metrics=["accuracy"])
+        dataType = tf.float32 # Numerical value
 
-model.fit(trainingFeatures, labels, epochs=5)
+    # Shape = (1,) is a scalar, extra comma used to define as a tuple
+    # Name is just the name assigned to the layer
+    # For example, 'age' : kerasTensor shape(None, 1), dtype=float32 etc.
+    inputsToNN[name] = keras.Input(shape=(1,), name=name, dtype=dataType)
 
+# Now, we need to normalise all numerical inputs:
 
+# This is an example of dictionary comprehension in python
+# What it does, is it creates a new dictionary with this syntax:
+# {key: value for key, value in iterable if condition}
+# Essentially, it goes over the keys and values of the other dictionary we made,
+# and then makes a new dictionary by adding all keys and values that have a dType of float32
+numericInputs = {name : input for name, input in inputsToNN.items()
+                 if input}
 
+# The concatonate layer is used to join multiple layers into one layer
+# This is usually done with inputs, allowing to have multiple different input layers passed in as one
+# We create an array of the values (all tensors) in the numericInput dictionary
+x = keras.layers.Concatenate()(list(numericInputs.values()))
 
+# Normalises all the values in the columns with the specified names in the pandas table
+# Adapt works out the mean and varience, which is required for normalisation
+normalise = keras.layers.Normalization()
+normalise.adapt(np.array(dataFrameTitanicTrain[numericInputs.keys()]))
+
+allNumericInputs = normalise(x)
 
 
 
