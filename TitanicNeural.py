@@ -80,13 +80,18 @@ for name, input in inputs.items():
     # trainingDataCSV[name] returns the column for the name, if name == "Age", then it returns the values of the age column and their index
     # We use unique, as lets say name == "Sex", then the only two values we have are male and female, and so vocabulary would be ["male", "female"]
 
-    lookup = keras.layers.StringLookup(vocabulary=np.unique(trainingDataCSV[name]))
-    oneHot = keras.layers.CategoryEncoding(num_tokens=lookup.vocabulary_size())
+    stringLookup = keras.layers.StringLookup(vocabulary=np.unique(trainingDataCSV[name]))
+    oneHot = keras.layers.CategoryEncoding(num_tokens=stringLookup.vocabulary_size())
 
-    x = lookup(input)
+    # String lookup gives us the numeric data
+    # One hot gives us the one shot array of the data, eg [0,1] for male, [1,0] for female
+    x = stringLookup(input)
     x = oneHot(x)
 
+    # Appends the now numeric string data to the previous numeric data 
     preprocessedInputs.append(x)
+
+preprocessedInputsConcatonated = keras.layers.Concatenate()(preprocessedInputs)
     
 
 
