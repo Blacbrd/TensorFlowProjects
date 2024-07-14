@@ -50,4 +50,6 @@ model.compile(optimizer=optimiser, loss="binary_crossentropy", metrics=["accurac
 
 # Training:
 # Batch size is how many images you pass through the network at a time
-model.fit(x_train, y_train, epochs=5, batch_size=64, validation_split=0.2)
+model.fit(x_train, y_train, epochs=10, batch_size=64, validation_split=0.2)
+
+# model.save("DogCatRecogniser.keras")
