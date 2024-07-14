@@ -12,6 +12,10 @@ dataDirTrain = "C:\\Users\\blacb\\Desktop\\Datasets\\titanic\\train.csv"
 # Reads csv file
 dataFrameTitanicTrain = pd.read_csv(dataDirTrain)
 
+# Wont be relevant in the data
+dataFrameTitanicTrain.pop("PassengerId")
+dataFrameTitanicTrain.pop("Cabin")
+
 # Removes survived column and adds it to this variable
 labelsCSV = dataFrameTitanicTrain.pop("Survived")
 
@@ -20,7 +24,7 @@ trainingDataCSV = dataFrameTitanicTrain
 
 # Need to fill in null values, otherwise "np.unique()" will not work 
 trainingDataCSV["Embarked"] = trainingDataCSV["Embarked"].fillna("N")
-trainingDataCSV["Cabin"] = trainingDataCSV["Cabin"].fillna("NULL")
+# trainingDataCSV["Cabin"] = trainingDataCSV["Cabin"].fillna("NULL")
 
 
 # Since each column has a different datatype and such, we need to split them up
@@ -43,6 +47,7 @@ for name, column in trainingDataCSV.items():
     # Name is just the name assigned to the layer
     # For example, 'age' : kerasTensor shape(None, 1), dtype=float32 etc.
     inputs[name] = keras.Input(shape=(1,), name=name, dtype=dataType)
+
 
 # Now, we need to normalise all numerical inputs:
 
@@ -91,8 +96,47 @@ for name, input in inputs.items():
     # Appends the now numeric string data to the previous numeric data 
     preprocessedInputs.append(x)
 
+# Concatonates/joins all the layers together into one big input layer
 preprocessedInputsConcatonated = keras.layers.Concatenate()(preprocessedInputs)
-    
 
 
+# Essentially, everything above was to set up this model.
+# This model takes the data, and preprosses it through a network and layers
+# It takes the raw inputs from the pandas dataframe, and then outputs the nicely processed inputs
+# These inputs are in one layer, normalised, and in numerical form
+preprocessingModel = keras.Model(inputs, preprocessedInputsConcatonated)
+
+
+# Now we need to create a dictionary of tensors, this is to allow for flexible representation
+# of complex relationships, especially since we're dealing with multiple different types of data
+# We need to define this since keras doesn't know how to represent your pandas dataframe
+titanicDataDict = {name : np.array(value)
+                   for name, value in trainingDataCSV.items()}
+
+
+
+def titanicModel(preprocessingHead, inputs):
+
+    body = keras.Sequential([
+        keras.layers.Dense(64, activation="relu"),
+        keras.layers.Dense(1, activation="sigmoid")
+    ])
+
+    preprocessedInputs = preprocessingHead(inputs)
+    result = body(preprocessedInputs)
+    model = keras.Model(inputs, result)
+
+    model.compile(loss=keras.losses.BinaryCrossentropy(), optimizer=keras.optimizers.Adam(), metrics=["accuracy"])
+
+    return model
+
+titanicModel = titanicModel(preprocessingModel, inputs)
+
+titanicModel.fit(x=titanicDataDict, y=labelsCSV, epochs=20)
+
+titanicModel.save("titanicSurvival.keras")
+
+
+# SO APPARENTLY, NNs ARE NOT GOOD FOR SMALL DATASETS
+# NEED TO USE A DIFFERENT MODEL!!!
 
